@@ -319,4 +319,72 @@ if not st.session_state.game_over:
       st.rerun()
 
   with col_b:
-    if len(placed_items) == len(correct_list) and not st.session_
+    if len(placed_items) == len(correct_list) and not st.session_state.checked:
+      if st.button("🔍 정답 확인하기", type="primary", use_container_width=True):
+        user_sent = [item[0] for item in placed_items]
+        is_correct = user_sent == correct_list
+        st.session_state.checked = True
+        st.session_state.is_correct = is_correct
+        if is_correct:
+          st.session_state.score += 10
+        st.rerun()
+    else:
+      if not st.session_state.checked:
+        st.button(
+            "🔍 정답 확인하기", disabled=True, use_container_width=True
+        )
+
+  with col_c:
+    if st.session_state.checked and st.session_state.is_correct:
+      next_label = (
+          "다음 문제로 ➔"
+          if st.session_state.current_q < len(PROBLEMS) - 1
+          else "완료하기 ➔"
+      )
+      if st.button(next_label, type="primary", use_container_width=True):
+        if st.session_state.current_q < len(PROBLEMS) - 1:
+          st.session_state.current_q += 1
+          init_question(st.session_state.current_q)
+        else:
+          st.session_state.game_over = True
+        st.rerun()
+    else:
+      st.button("다음 문제로 ➔", disabled=True, use_container_width=True)
+
+else:
+  # ----------------------------------------------------
+  # 10문제 완료 시 대형 힌트 9 팝업 표시 화면
+  # ----------------------------------------------------
+  st.balloons()
+  st.markdown(
+      """
+    <div style="text-align: center; padding: 25px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 20px;">
+        <h2>🎉 축하합니다! 10문제를 모두 완벽하게 클리어하셨습니다!</h2>
+        <p style="color: #666; font-size: 1.1rem;">대한민국 헌법 조문을 모두 완성하셨네요.</p>
+    </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  st.markdown(
+      """
+    <div class="hint-banner">
+        <h3 style="color: #c0392b; margin-bottom: 10px; font-size: 1.6rem;">🎁 최종 미션 성공 보상</h3>
+        <div style="font-size: 4rem; font-weight: 900; color: #2c3e50; margin: 15px 0; letter-spacing: 2px;">
+            힌트 9
+        </div>
+        <p style="color: #555; font-size: 1.2rem; margin-top: 10px; font-weight: bold;">
+            정답을 다 풀면 하나씩 주어지는 4자리 비밀 코드 중 하나입니다!
+        </p>
+    </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  st.write("")
+  if st.button("🎮 게임 다시 시작하기", type="primary", use_container_width=True):
+    st.session_state.current_q = 0
+    st.session_state.score = 0
+    st.session_state.game_over = False
+    init_question(0)
+    st.rerun()
