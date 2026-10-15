@@ -241,10 +241,9 @@ if not st.session_state.game_over:
       if i < len(placed_items):
         word, pool_idx = placed_items[i]
         is_locked = st.session_state.checked and st.session_state.is_correct
+        btn_label = word if is_locked else f"❌ {word}"
         if st.button(
-            f"❌ {word}" if not is_locked else word,
-            key=f"placed_{i}_{pool_idx}",
-            disabled=is_locked,
+            btn_label, key=f"placed_{i}_{pool_idx}", disabled=is_locked
         ):
           if not st.session_state.checked:
             st.session_state.placed_items.pop(i)
@@ -320,54 +319,4 @@ if not st.session_state.game_over:
       st.rerun()
 
   with col_b:
-    if len(placed_items) == len(correct_list) and not st.session_state.checked:
-      if st.button("🔍 정답 확인하기", type="primary", use_container_width=True):
-        user_sent = [item[0] for item in placed_items]
-        is_correct = user_sent == correct_list
-        st.session_state.checked = True
-        st.session_state.is_correct = is_correct
-        if is_correct:
-          st.session_state.score += 10
-        st.rerun()
-    else:
-      if not st.session_state.checked:
-        st.button(
-            "🔍 정답 확인하기", disabled=True, use_container_width=True
-        )
-
-  with col_c:
-    if st.session_state.checked and st.session_state.is_correct:
-      next_label = (
-          "다음 문제로 ➔"
-          if st.session_state.current_q < len(PROBLEMS) - 1
-          else "완료하기 ➔"
-      )
-      if st.button(next_label, type="primary", use_container_width=True):
-        if st.session_state.current_q < len(PROBLEMS) - 1:
-          st.session_state.current_q += 1
-          init_question(st.session_state.current_q)
-        else:
-          st.session_state.game_over = True
-        st.rerun()
-    else:
-      st.button("다음 문제로 ➔", disabled=True, use_container_width=True)
-
-else:
-  # ----------------------------------------------------
-  # 10문제 완료 시 대형 힌트 9 팝업 표시 화면 (따옴표 제거 완료)
-  # ----------------------------------------------------
-  st.balloons()
-  st.markdown(
-      """
-    <div style="text-align: center; padding: 25px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 20px;">
-        <h2>🎉 축하합니다! 10문제를 모두 완벽하게 클리어하셨습니다!</h2>
-        <p style="color: #666; font-size: 1.1rem;">대한민국 헌법 조문을 모두 완성하셨네요.</p>
-    </div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  st.markdown(
-      """
-    <div class="hint-banner">
-        <h3 style="color: #c0392
+    if len(placed_items) == len(correct_list) and not st.session_
