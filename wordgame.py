@@ -8,47 +8,70 @@ st.set_page_config(
     layout="centered",
 )
 
-# 커스텀 CSS (애니메이션 및 색상 효과)
+# 역동적인 게임 스타일을 위한 커스텀 CSS (애니메이션, 통통 튀는 버튼, 카드 효과)
 st.markdown(
     """
     <style>
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
     .correct-box {
         background-color: #d4edda;
         color: #155724;
-        padding: 10px;
-        border-radius: 8px;
-        border: 2px solid #c3e6cb;
+        padding: 12px;
+        border-radius: 12px;
+        border: 2px solid #28a745;
         text-align: center;
         font-weight: bold;
-        animation: popUp 0.3s ease-in-out;
+        font-size: 1.1rem;
+        animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
     }
     .wrong-box {
         background-color: #f8d7da;
         color: #721c24;
-        padding: 10px;
-        border-radius: 8px;
-        border: 2px solid #f5c6cb;
+        padding: 12px;
+        border-radius: 12px;
+        border: 2px solid #dc3545;
         text-align: center;
         font-weight: bold;
+        font-size: 1.1rem;
         animation: shake 0.4s ease-in-out;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
     }
     @keyframes popUp {
-        0% { transform: scale(0.8); opacity: 0; }
+        0% { transform: scale(0.6); opacity: 0; }
         100% { transform: scale(1); opacity: 1; }
     }
     @keyframes shake {
         0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-6px); }
-        75% { transform: translateX(6px); }
+        20%, 60% { transform: translateX(-8px); }
+        40%, 80% { transform: translateX(8px); }
     }
     .stButton>button {
         width: 100%;
-        border-radius: 8px;
+        border-radius: 12px;
         font-weight: bold;
-        transition: all 0.2s;
+        font-size: 1rem;
+        padding: 10px;
+        background-color: #ffffff;
+        border: 2px solid #4a90e2;
+        color: #333333;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        transform: scale(1.03);
+        transform: translateY(-4px) scale(1.02);
+        background-color: #4a90e2;
+        color: white;
+        box-shadow: 0 6px 12px rgba(74, 144, 226, 0.3);
+    }
+    .game-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
     }
     </style>
 """,
@@ -123,7 +146,7 @@ if "placed_words" not in st.session_state:
 if "shuffled_words" not in st.session_state:
   st.session_state.shuffled_words = []
 if "feedback" not in st.session_state:
-  st.session_state.feedback = None  # "correct", "wrong"
+  st.session_state.feedback = None
 if "game_over" not in st.session_state:
   st.session_state.game_over = False
 
@@ -144,29 +167,40 @@ if not st.session_state.shuffled_words and not st.session_state.game_over:
   load_question(st.session_state.current_q)
 
 # 타이틀
-st.title("🇰🇷 대한민국 헌법 문장 만들기 게임")
-st.markdown("올바른 순서대로 단어를 클릭하여 헌법 조문을 완성하세요!")
+st.markdown(
+    "<h1 style='text-align: center; color: #2c3e50;'>🇰🇷 헌법 완성 대작전!</h1>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "<p style='text-align: center; color: #555;'>단어를 올바른 순서대로 조립하여"
+    " 대한민국 헌법을 완성하세요.</p>",
+    unsafe_allow_html=True,
+)
 st.divider()
 
 if not st.session_state.game_over:
   current_prob = PROBLEMS[st.session_state.current_q]
 
-  # 진행 상태 표시
+  # 상단 정보 카드
+  st.markdown('<div class="game-card">', unsafe_allow_html=True)
   col1, col2 = st.columns([2, 1])
   with col1:
-    st.subheader(f"문제 {st.session_state.current_q + 1} / 10")
-    st.markdown(f"**[{current_prob['level']}] {current_prob['title']}**")
+    st.markdown(f"### 🎯 문제 {st.session_state.current_q + 1} / 10")
+    st.markdown(
+        f"**난이도:** `{current_prob['level']}` &nbsp;|&nbsp; **조문:**"
+        f" **{current_prob['title']}**"
+    )
   with col2:
-    st.metric("현재 점수", f"{st.session_state.score} 점")
+    st.metric(
+        label="⭐ 획득 점수", value=f"{st.session_state.score} 점", delta="+10점/문항"
+    )
+  st.markdown("</div>", unsafe_allow_html=True)
 
-  st.write("")
-
-  # 1. 현재 맞추고 있는 완성 영역 (하단 배치)
-  st.markdown("### 🧩 완성된 문장 칸")
+  # 1. 완성된 문장 칸 (슬롯)
+  st.markdown("#### 🧩 문장 맞추기 칸")
   correct_list = st.session_state.correct_list
   placed = st.session_state.placed_words
 
-  # 슬롯 시각화
   slot_cols = st.columns(len(correct_list))
   for i, col in enumerate(slot_cols):
     with col:
@@ -176,75 +210,62 @@ if not st.session_state.game_over:
         )
       else:
         st.markdown(
-            '<div style="background-color: #f1f3f5; color: #adb5bd; padding:'
-            ' 10px; border-radius: 8px; text-align: center; border: 2px dashed'
-            ' #ced4da;">빈칸</div>',
+            '<div style="background-color: #e9ecef; color: #adb5bd; padding:'
+            ' 12px; border-radius: 12px; text-align: center; border: 2px dashed'
+            ' #ced4da; font-weight: bold;">빈칸</div>',
             unsafe_allow_html=True,
         )
 
   st.write("")
-  st.divider()
 
   # 피드백 메시지 표시
   if st.session_state.feedback == "wrong":
     st.markdown(
-        '<div class="wrong-box">❌ 틀렸습니다! 올바른 순서가 아닙니다. 다시'
+        '<div class="wrong-box">❌ 아까워요! 순서가 틀렸습니다. 다시'
         " 도전해보세요!</div>",
         unsafe_allow_html=True,
     )
   elif st.session_state.feedback == "correct_step":
     st.markdown(
-        '<div class="correct-box">✅ 맞았습니다! 다음 단어를 선택하세요.</div>',
+        '<div class="correct-box">✨ 딩동댕! 올바른 단어입니다. 계속해서'
+        " 이어가세요!</div>",
         unsafe_allow_html=True,
     )
 
-  # 2. 선택 가능한 단어들 (돌아다니는 단어 콘셉트 -> 버튼 형태로 배치)
-  st.markdown("### 🔀 단어 선택 영역")
-  st.caption("아래 단어 중 다음에 올 알맞은 단어를 선택하세요.")
+  st.divider()
 
-  # 남은 단어들 표시
-  remaining_words = [
-      w
-      for w in st.session_state.shuffled_words
-      if st.session_state.shuffled_words.count(w)
-      > st.session_state.placed_words.count(w)
-  ]
+  # 2. 선택 가능한 단어들 (버튼 형태)
+  st.markdown("#### 🔀 아래 단어를 클릭하여 빈칸을 채우세요")
 
-  # 한 줄에 4개씩 버튼 배치
+  # 남은 단어들을 필터링하여 버튼으로 배치
   cols = st.columns(4)
   for i, word in enumerate(st.session_state.shuffled_words):
-    # 이미 올바르게 배치된 단어 개수 파악
-    already_used = st.session_state.placed_words.count(word)
-    # 현재 화면에 남아있는 동일 단어 체크 간단 구현을 위해 인덱스 기반으로 관리
     col_idx = i % 4
     with cols[col_idx]:
-      # 이미 사용된 단어인지 확인 (중복 단어 대응)
-      # 간단하게 현재 사용된 횟수보다 적게 선택되었을 때만 활성화
-      used_count = st.session_state.placed_words.count(word)
-      total_count_in_problem = st.session_state.correct_list.count(word)
-
-      # 버튼 클릭 이벤트
-      if st.button(word, key=f"word_{i}"):
+      # 이미 배치된 단어인지 확인하여 사용 완료된 단어는 비활성화 효과 혹은 처리
+      # 여기서는 심플하게 버튼 클릭 시 정오답 판정
+      if st.button(word, key=f"word_btn_{i}_{random.random()}"):
         next_idx = len(st.session_state.placed_words)
         expected_word = st.session_state.correct_list[next_idx]
 
         if word == expected_word:
           # 정답일 때
           st.session_state.placed_words.append(word)
-          st.session_state.feedback = "correct_step"
 
-          # 문장을 전부 맞췄을 때
+          # 문장을 전부 완성했을 때 (자동 다음 문제 전환 + 빵빠레)
           if len(st.session_state.placed_words) == len(
               st.session_state.correct_list
           ):
             st.session_state.score += 10
-            st.success("🎉 문장을 완벽하게 완성했습니다!")
-            if st.session_state.current_q < 9:
+            st.balloons()  # 🎊 빵빠레 터트리기!
+
+            if st.session_state.current_q < len(PROBLEMS) - 1:
               st.session_state.current_q += 1
-              st.balloons()
-              # 다음 문제로 넘어가기 위한 버튼 유도
+              load_question(st.session_state.current_q)
             else:
               st.session_state.game_over = True
+          else:
+            st.session_state.feedback = "correct_step"
           st.rerun()
         else:
           # 틀렸을 때
@@ -252,20 +273,25 @@ if not st.session_state.game_over:
           st.rerun()
 
   st.write("")
-  if st.button("🔄 현재 문제 초기화"):
+  if st.button("🔄 현재 문제 다시 시작하기"):
     load_question(st.session_state.current_q)
     st.rerun()
 
 else:
-  # 게임 종료 화면
+  # 게임 최종 클리어 화면
   st.balloons()
-  st.title("🏆 게임 클리어!")
-  st.success(
-      f"축하합니다! 총 10문제를 모두 풀었습니다.\n\n 최종 점수: 총"
-      f" {st.session_state.score} 점"
+  st.markdown(
+      """
+    <div style="text-align: center; padding: 40px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <h1>🏆 축하합니다! 모든 게임을 클리어하셨습니다!</h1>
+        <p style="font-size: 1.2rem; color: #555;">대한민국 헌법의 수호자가 되셨습니다.</p>
+    </div>
+    """,
+      unsafe_allow_html=True,
   )
+  st.success(f"최종 점수: 총 {st.session_state.score} 점 / 100점 만점")
 
-  if st.button("🎮 게임 다시 시작하기"):
+  if st.button("🎮 처음부터 다시 도전하기"):
     st.session_state.current_q = 0
     st.session_state.score = 0
     st.session_state.game_over = False
