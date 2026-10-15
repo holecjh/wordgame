@@ -27,11 +27,6 @@ st.markdown(
         cursor: pointer;
         margin-bottom: 5px;
     }
-    .word-slot:hover {
-        background-color: #ffe3e3;
-        border-color: #fa5252;
-        color: #c92a2a;
-    }
     .empty-slot {
         background-color: #f1f3f5;
         color: #adb5bd;
@@ -48,19 +43,48 @@ st.markdown(
         box-shadow: 0 8px 20px rgba(0,0,0,0.06);
         margin-bottom: 20px;
     }
-    .result-card-correct {
+    .success-box {
         background-color: #d4edda;
-        border-left: 6px solid #28a745;
+        color: #155724;
         padding: 15px;
-        border-radius: 8px;
+        border-radius: 10px;
+        border: 2px solid #28a745;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1rem;
         margin-bottom: 15px;
+        animation: popUp 0.3s ease-in-out;
     }
-    .result-card-wrong {
+    .error-box {
         background-color: #f8d7da;
-        border-left: 6px solid #dc3545;
+        color: #721c24;
         padding: 15px;
-        border-radius: 8px;
+        border-radius: 10px;
+        border: 2px solid #dc3545;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.1rem;
         margin-bottom: 15px;
+        animation: shake 0.3s ease-in-out;
+    }
+    .hint-banner {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        padding: 40px 20px;
+        border-radius: 20px;
+        text-align: center;
+        border: 4px solid #ff7675;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        margin: 20px 0;
+        animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popUp {
+        0% { transform: scale(0.7); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
     }
     </style>
 """,
@@ -125,15 +149,17 @@ PROBLEMS = [
 if "current_q" not in st.session_state:
   st.session_state.current_q = 0
 if "placed_items" not in st.session_state:
-  st.session_state.placed_items = (
-      []
-  )  # 형식: 리스트 내의 (word, original_pool_index) 튜플
+  st.session_state.placed_items = []
 if "shuffled_words" not in st.session_state:
   st.session_state.shuffled_words = []
 if "correct_list" not in st.session_state:
   st.session_state.correct_list = []
-if "results_history" not in st.session_state:
-  st.session_state.results_history = []
+if "checked" not in st.session_state:
+  st.session_state.checked = False
+if "is_correct" not in st.session_state:
+  st.session_state.is_correct = False
+if "score" not in st.session_state:
+  st.session_state.score = 0
 if "game_over" not in st.session_state:
   st.session_state.game_over = False
 
@@ -146,9 +172,10 @@ def init_question(idx):
   st.session_state.correct_list = correct_list
   st.session_state.shuffled_words = shuffled
   st.session_state.placed_items = []
+  st.session_state.checked = False
+  st.session_state.is_correct = False
 
 
-# 게임 시작 시 초기화
 if not st.session_state.shuffled_words and not st.session_state.game_over:
   init_question(0)
 
@@ -158,8 +185,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='text-align: center; color: #555;'>단어를 순서대로 배치하여 문장을"
-    " 완성하세요. (배치된 단어를 누르면 다시 제외됩니다)</p>",
+    "<p style='text-align: center; color: #555;'>단어를 순서대로 배치한 뒤"
+    " 정답을 확인하세요.</p>",
     unsafe_allow_html=True,
 )
 st.divider()
@@ -185,9 +212,9 @@ if not st.session_state.game_over:
   st.markdown("</div>", unsafe_allow_html=True)
 
   correct_list = st.session_state.correct_list
-  placed_items = st.session_state.placed_items  # [(word, pool_idx), ...]
+  placed_items = st.session_state.placed_items
 
-  # 1. 완성된 문장 칸 (슬롯) - 클릭 시 해당 단어 제거 기능 포함
+  # 1. 완성된 문장 칸 (슬롯)
   st.markdown("#### 🧩 완성된 문장 칸 (클릭하면 단어가 빠집니다)")
   slot_cols = st.columns(len(correct_list))
 
@@ -195,140 +222,38 @@ if not st.session_state.game_over:
     with col:
       if i < len(placed_items):
         word, pool_idx = placed_items[i]
-        # 단어를 클릭하면 해당 단어를 빼는 버튼 구현
-        if st.button(f"❌ {word}", key=f"placed_{i}_{pool_idx}"):
-          # 해당 아이템 제거
-          st.session_state.placed_items.pop(i)
-          st.rerun()
+        # 정답을 맞춘 후에는 단어 빼기 잠금
+        is_locked = st.session_state.checked and st.session_state.is_correct
+        if st.button(
+            f"❌ {word}" if not is_locked else word,
+            key=f"placed_{i}_{pool_idx}",
+            disabled=is_locked,
+        ):
+          if not st.session_state.checked:
+            st.session_state.placed_items.pop(i)
+            st.rerun()
       else:
         st.markdown(
             '<div class="empty-slot">빈칸</div>', unsafe_allow_html=True
         )
 
   st.write("")
-  st.divider()
 
-  # 2. 선택 가능한 단어 풀 영역
-  st.markdown("#### 🔀 단어 선택 영역")
-  st.caption("아래 단어를 클릭하면 빈칸에 차례대로 채워집니다.")
-
-  used_pool_indices = [item[1] for item in placed_items]
-
-  # 4열 버튼 배치
-  cols = st.columns(4)
-  for idx, word in enumerate(st.session_state.shuffled_words):
-    col_idx = idx % 4
-    with cols[col_idx]:
-      is_used = idx in used_pool_indices
-      if not is_used:
-        if st.button(word, key=f"pool_{idx}"):
-          if len(st.session_state.placed_items) < len(correct_list):
-            st.session_state.placed_items.append((word, idx))
-            st.rerun()
-      else:
-        # 이미 사용된 단어는 비활성화처럼 표시
-        st.button(
-            f"✓ {word}", key=f"pool_used_{idx}", disabled=True, use_container_width=True
-        )
-
-  st.write("")
-  st.divider()
-
-  # 하단 제어 버튼
-  col_a, col_b = st.columns(2)
-  with col_a:
-    if st.button("🔄 전체 비우기", use_container_width=True):
-      st.session_state.placed_items = []
-      st.rerun()
-
-  with col_b:
-    # 모든 빈칸이 채워졌을 때만 제출 버튼 활성화
-    if len(placed_items) == len(correct_list):
-      if st.button("📥 이 문장으로 제출하기 ➔", type="primary", use_container_width=True):
-        user_sent = [item[0] for item in placed_items]
-        is_correct = user_sent == correct_list
-
-        # 결과 기록 저장
-        st.session_state.results_history.append({
-            "q_num": st.session_state.current_q + 1,
-            "title": current_prob["title"],
-            "level": current_prob["level"],
-            "correct_list": correct_list,
-            "user_list": user_sent,
-            "is_correct": is_correct,
-        })
-
-        # 다음 문제로 넘어가거나 게임 종료
-        if st.session_state.current_q < len(PROBLEMS) - 1:
-          st.session_state.current_q += 1
-          init_question(st.session_state.current_q)
-        else:
-          st.session_state.game_over = True
-          st.balloons()
-        st.rerun()
-    else:
-      st.button(
-          "📥 모든 빈칸을 채워주세요", disabled=True, use_container_width=True
-      )
-
-else:
-  # ----------------------------------------------------
-  # 4번 요구사항: 10문제 종료 후 정답 및 오답노트 일괄 공개
-  # ----------------------------------------------------
-  st.balloons()
-  st.markdown(
-      """
-    <div style="text-align: center; padding: 30px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 30px;">
-        <h2>🎉 10문제 도전을 모두 완료하셨습니다!</h2>
-        <p style="color: #666; font-size: 1.1rem;">아래에서 나의 정답 여부와 오답 노트를 꼼꼼히 확인해 보세요.</p>
-    </div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  # 총 점수 계산
-  correct_count = sum(
-      1 for r in st.session_state.results_history if r["is_correct"]
-  )
-  total_score = correct_count * 10
-
-  st.metric(label="🏆 최종 성적", value=f"{total_score} 점 / 100점 만점", delta=f"정답 수: {correct_count}/10")
-  st.divider()
-
-  st.subheader("📝 전체 문제 오답 노트 및 결과")
-
-  for res in st.session_state.results_history:
-    card_class = (
-        "result-card-correct" if res["is_correct"] else "result-card-wrong"
-    )
-    status_icon = "✅ 정답" if res["is_correct"] else "❌ 오답"
-
-    st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
-    st.markdown(
-        f"#### 문제 {res['q_num']} ({res['level']} - {res['title']}) &nbsp;&nbsp;"
-        f" **{status_icon}**"
-    )
-
-    correct_str = " / ".join(res["correct_list"])
-    user_str = " / ".join(res["user_list"])
-
-    st.markdown(f"- **올바른 정답:** `{correct_str}`")
-    st.markdown(f"- **내가 제출한 답:** `{user_str}`")
-
-    if not res["is_correct"]:
+  # 정답 확인 후 피드백 메시지 출력
+  if st.session_state.checked:
+    if st.session_state.is_correct:
       st.markdown(
-          "<span style='color: #dc3545; font-weight: bold;'>💡 피드백:</span>"
-          " 단어의 순서가 잘못 배치되었습니다. 올바른 순서를 다시 한번 눈여겨"
-          " 익혀보세요!",
+          '<div class="success-box">✅ 정답입니다! 멋지게 문장을 완성하셨습니다!</div>',
+          unsafe_allow_html=True,
+      )
+    else:
+      st.markdown(
+          '<div class="error-box">❌ 아쉽네요! 틀린 부분이 있습니다. 단어를'
+          " 수정하거나 초기화 후 다시 도전해보세요.</div>",
           unsafe_allow_html=True,
       )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+  st.divider()
 
-  st.write("")
-  if st.button("🎮 게임 다시 시작하기", type="primary", use_container_width=True):
-    st.session_state.current_q = 0
-    st.session_state.results_history = []
-    st.session_state.game_over = False
-    init_question(0)
-    st.rerun()
+  # 2. 선택 가능한 단어 풀 영역
+  st.markdown("
