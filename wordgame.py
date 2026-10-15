@@ -303,4 +303,71 @@ if not st.session_state.game_over:
         )
 
   st.write("")
-  st
+  st.divider()
+
+  # 하단 제어 버튼 그룹
+  col_a, col_b, col_c = st.columns(3)
+
+  with col_a:
+    if st.button(
+        "🔄 초기화",
+        use_container_width=True,
+        disabled=st.session_state.checked and st.session_state.is_correct,
+    ):
+      st.session_state.placed_items = []
+      st.session_state.checked = False
+      st.session_state.is_correct = False
+      st.rerun()
+
+  with col_b:
+    if len(placed_items) == len(correct_list) and not st.session_state.checked:
+      if st.button("🔍 정답 확인하기", type="primary", use_container_width=True):
+        user_sent = [item[0] for item in placed_items]
+        is_correct = user_sent == correct_list
+        st.session_state.checked = True
+        st.session_state.is_correct = is_correct
+        if is_correct:
+          st.session_state.score += 10
+        st.rerun()
+    else:
+      if not st.session_state.checked:
+        st.button(
+            "🔍 정답 확인하기", disabled=True, use_container_width=True
+        )
+
+  with col_c:
+    if st.session_state.checked and st.session_state.is_correct:
+      next_label = (
+          "다음 문제로 ➔"
+          if st.session_state.current_q < len(PROBLEMS) - 1
+          else "완료하기 ➔"
+      )
+      if st.button(next_label, type="primary", use_container_width=True):
+        if st.session_state.current_q < len(PROBLEMS) - 1:
+          st.session_state.current_q += 1
+          init_question(st.session_state.current_q)
+        else:
+          st.session_state.game_over = True
+        st.rerun()
+    else:
+      st.button("다음 문제로 ➔", disabled=True, use_container_width=True)
+
+else:
+  # ----------------------------------------------------
+  # 10문제 완료 시 대형 힌트 9 팝업 표시 화면 (따옴표 제거 완료)
+  # ----------------------------------------------------
+  st.balloons()
+  st.markdown(
+      """
+    <div style="text-align: center; padding: 25px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 20px;">
+        <h2>🎉 축하합니다! 10문제를 모두 완벽하게 클리어하셨습니다!</h2>
+        <p style="color: #666; font-size: 1.1rem;">대한민국 헌법 조문을 모두 완성하셨네요.</p>
+    </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  st.markdown(
+      """
+    <div class="hint-banner">
+        <h3 style="color: #c0392
