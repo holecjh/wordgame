@@ -87,7 +87,7 @@ st.markdown(
         75% { transform: translateX(6px); }
     }
     </style>
-""",
+    """,
     unsafe_allow_html=True,
 )
 
@@ -116,32 +116,50 @@ PROBLEMS = [
     {
         "level": "난이도 2 (8단어)",
         "title": "헌법 제34조",
-        "text": "국가는 / 재해를 / 예방하고 / 그 위험으로부터 / 국민을 / 보호하기 위하여 / 노력하여야 / 한다.",
+        "text": (
+            "국가는 / 재해를 / 예방하고 / 그 위험으로부터 / 국민을 / 보호하기 위하여"
+            " / 노력하여야 / 한다."
+        ),
     },
     {
         "level": "난이도 2 (8단어)",
         "title": "헌법 제37조",
-        "text": "국민의 / 자유와 / 권리는 / 헌법에 / 열거되지 / 아니한 이유로 / 경시되지 / 아니한다.",
+        "text": (
+            "국민의 / 자유와 / 권리는 / 헌법에 / 열거되지 / 아니한 이유로 / 경시되지"
+            " / 아니한다."
+        ),
     },
     {
         "level": "난이도 3 (9단어)",
         "title": "헌법 제2조",
-        "text": "국가는 / 법률이 / 정하는 / 바에 / 의하여 / 재외국민을 / 보호할 / 의무를 / 진다",
+        "text": (
+            "국가는 / 법률이 / 정하는 / 바에 / 의하여 / 재외국민을 / 보호할 / 의무를"
+            " / 진다"
+        ),
     },
     {
         "level": "난이도 3 (9단어)",
         "title": "헌법 제12조",
-        "text": "모든 / 국민은 / 고문을 / 받지 아니하며 / 형사상 / 자기에게 / 불리한 / 진술을 / 강요당하지 아니한다",
+        "text": (
+            "모든 / 국민은 / 고문을 / 받지 아니하며 / 형사상 / 자기에게 / 불리한 /"
+            " 진술을 / 강요당하지 아니한다"
+        ),
     },
     {
         "level": "난이도 3 (9단어)",
         "title": "헌법 제21조",
-        "text": "모든 / 국민은 / 언론 / 출판의 / 자유와 / 집회 / 결사의 / 자유를 / 가진다.",
+        "text": (
+            "모든 / 국민은 / 언론 / 출판의 / 자유와 / 집회 / 결사의 / 자유를 /"
+            " 가진다."
+        ),
     },
     {
         "level": "난이도 4 (10단어)",
         "title": "헌법 제10조",
-        "text": "모든 / 국민은 / 인간으로서의 / 존엄과 / 가치를 / 가지며 / 행복을 / 추구할 / 권리를 / 가진다",
+        "text": (
+            "모든 / 국민은 / 인간으로서의 / 존엄과 / 가치를 / 가지며 / 행복을 /"
+            " 추구할 / 권리를 / 가진다"
+        ),
     },
 ]
 
@@ -249,4 +267,40 @@ if not st.session_state.game_over:
       st.markdown(
           '<div class="error-box">❌ 아쉽네요! 틀린 부분이 있습니다. 단어를'
           " 수정하거나 초기화 후 다시 도전해보세요.</div>",
-          unsafe_allow_html=True
+          unsafe_allow_html=True,
+      )
+
+  st.divider()
+
+  # 2. 선택 가능한 단어 풀 영역
+  st.markdown("#### 🔀 단어 선택 영역")
+  st.caption("아래 단어를 클릭하면 빈칸에 차례대로 채워집니다.")
+
+  used_pool_indices = [item[1] for item in placed_items]
+  cols = st.columns(4)
+  for idx, word in enumerate(st.session_state.shuffled_words):
+    col_idx = idx % 4
+    with cols[col_idx]:
+      is_used = idx in used_pool_indices
+      if not is_used:
+        if st.button(
+            word,
+            key=f"pool_{idx}",
+            disabled=st.session_state.checked and st.session_state.is_correct,
+        ):
+          if (
+              len(st.session_state.placed_items) < len(correct_list)
+              and not st.session_state.checked
+          ):
+            st.session_state.placed_items.append((word, idx))
+            st.rerun()
+      else:
+        st.button(
+            f"✓ {word}",
+            key=f"pool_used_{idx}",
+            disabled=True,
+            use_container_width=True,
+        )
+
+  st.write("")
+  st
