@@ -8,83 +8,120 @@ st.set_page_config(
     layout="centered",
 )
 
-# 커스텀 CSS 스타일링
+# 커스텀 CSS 스타일링 (책 느낌 디자인 + 공중에서 떨어지는 애니메이션)
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap');
+
     .stApp {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(135deg, #fdfbf7 0%, #e6e2d6 100%);
+        font-family: 'Gowun Batang', serif;
     }
-    .word-slot {
-        background-color: #ffffff;
-        color: #212529;
-        padding: 10px 14px;
-        border-radius: 10px;
-        border: 2px solid #4a90e2;
-        text-align: center;
-        font-weight: bold;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        cursor: pointer;
-        margin-bottom: 5px;
-    }
-    .empty-slot {
-        background-color: #f1f3f5;
-        color: #adb5bd;
-        padding: 12px;
-        border-radius: 10px;
-        text-align: center;
-        border: 2px dashed #ced4da;
-        font-weight: bold;
-    }
-    .game-card {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+
+    /* 책 프레임 카드 */
+    .book-frame {
+        background: #fffdfa;
+        padding: 30px;
+        border-radius: 16px;
+        border: 3px solid #d4cbb3;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.08);
         margin-bottom: 20px;
     }
+
+    /* 단어가 공중에서 문장으로 뚝 떨어지는 비행 애니메이션 */
+    @keyframes flyDrop {
+        0% {
+            transform: translateY(-35px) scale(0.6);
+            opacity: 0;
+        }
+        70% {
+            transform: translateY(6px) scale(1.05);
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+    }
+
+    .flying-effect {
+        animation: flyDrop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        display: inline-block;
+    }
+
+    /* 실제 책 본문처럼 단어가 유연하게 이어지는 문장 슬롯 영역 */
+    .sentence-box {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: flex-start;
+        background: #f7f5ef;
+        padding: 22px;
+        border-radius: 12px;
+        border: 1.5px solid #dcd4c0;
+        min-height: 110px;
+        margin-bottom: 15px;
+    }
+
+    .filled-word-card {
+        background-color: #ffffff;
+        color: #2c2c2c;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 2px solid #8c7b65;
+        font-weight: 700;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+        word-break: keep-all;
+    }
+
+    .empty-slot-card {
+        background-color: #eae6dc;
+        color: #9c9384;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 2px dashed #b5ab9a;
+        font-size: 1rem;
+        font-weight: 400;
+    }
+
     .success-box {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: #eafaf1;
+        color: #1e8449;
         padding: 15px;
         border-radius: 10px;
-        border: 2px solid #28a745;
+        border: 2px solid #27ae60;
         text-align: center;
         font-weight: bold;
         font-size: 1.1rem;
+        animation: flyDrop 0.3s ease-in-out;
         margin-bottom: 15px;
-        animation: popUp 0.3s ease-in-out;
     }
+
     .error-box {
-        background-color: #f8d7da;
-        color: #721c24;
+        background-color: #fdedec;
+        color: #c0392b;
         padding: 15px;
         border-radius: 10px;
-        border: 2px solid #dc3545;
+        border: 2px solid #e74c3c;
         text-align: center;
         font-weight: bold;
         font-size: 1.1rem;
+        animation: flyDrop 0.3s ease-in-out;
         margin-bottom: 15px;
-        animation: shake 0.3s ease-in-out;
     }
+
     .hint-banner {
-        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
         padding: 40px 20px;
         border-radius: 20px;
         text-align: center;
-        border: 4px solid #ff7675;
+        border: 4px solid #f39c12;
         box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         margin: 20px 0;
-        animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    @keyframes popUp {
-        0% { transform: scale(0.7); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-6px); }
-        75% { transform: translateX(6px); }
+        animation: flyDrop 0.5s ease-in-out;
     }
     </style>
     """,
@@ -199,12 +236,13 @@ if not st.session_state.shuffled_words and not st.session_state.game_over:
 
 # 타이틀
 st.markdown(
-    "<h1 style='text-align: center; color: #2c3e50;'>🇰🇷 헌법 완성 대작전</h1>",
+    "<h1 style='text-align: center; color: #2c3e50;'>🇰🇷 대한민국 헌법 문장"
+    " 완성하기</h1>",
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='text-align: center; color: #555;'>단어를 순서대로 배치한 뒤"
-    " 정답을 확인하세요.</p>",
+    "<p style='text-align: center; color: #666;'>단어를 순서대로 배치하여 실제"
+    " 헌법 조문을 책처럼 완성해 보세요.</p>",
     unsafe_allow_html=True,
 )
 st.divider()
@@ -212,8 +250,8 @@ st.divider()
 if not st.session_state.game_over:
   current_prob = PROBLEMS[st.session_state.current_q]
 
-  # 상단 진행 상태
-  st.markdown('<div class="game-card">', unsafe_allow_html=True)
+  # 상단 진행 상태 카드
+  st.markdown('<div class="book-frame">', unsafe_allow_html=True)
   col1, col2 = st.columns([2, 1])
   with col1:
     st.markdown(f"### 🎯 문제 {st.session_state.current_q + 1} / 10")
@@ -232,40 +270,38 @@ if not st.session_state.game_over:
   correct_list = st.session_state.correct_list
   placed_items = st.session_state.placed_items
 
-  # 1. 완성된 문장 칸 (슬롯)
-  st.markdown("#### 🧩 완성된 문장 칸 (클릭하면 단어가 빠집니다)")
-  slot_cols = st.columns(len(correct_list))
+  # 1. 책 본문 형태의 완성된 문장 칸 (긴 단어와 문장 전체가 잘 보이도록 Flexbox 적용)
+  st.markdown("#### 📖 완성된 문장 영역")
+  slots_html = '<div class="sentence-box">'
+  for i in range(len(correct_list)):
+    if i < len(placed_items):
+      word, _ = placed_items[i]
+      slots_html += (
+          f'<span class="filled-word-card flying-effect">{word}</span>'
+      )
+    else:
+      slots_html += '<span class="empty-slot-card">빈칸</span>'
+  slots_html += "</div>"
+  st.markdown(slots_html, unsafe_allow_html=True)
 
-  for i, col in enumerate(slot_cols):
-    with col:
-      if i < len(placed_items):
-        word, pool_idx = placed_items[i]
-        is_locked = st.session_state.checked and st.session_state.is_correct
-        btn_label = word if is_locked else f"❌ {word}"
-        if st.button(
-            btn_label, key=f"placed_{i}_{pool_idx}", disabled=is_locked
-        ):
-          if not st.session_state.checked:
-            st.session_state.placed_items.pop(i)
-            st.rerun()
-      else:
-        st.markdown(
-            '<div class="empty-slot">빈칸</div>', unsafe_allow_html=True
-        )
-
-  st.write("")
+  # 마지막 단어 취소 버튼
+  if placed_items and not (st.session_state.checked and st.session_state.is_correct):
+    if st.button("↩️ 방금 고른 단어 취소하기"):
+      st.session_state.placed_items.pop()
+      st.rerun()
 
   # 정답 확인 후 피드백 메시지 출력
   if st.session_state.checked:
     if st.session_state.is_correct:
       st.markdown(
-          '<div class="success-box">✅ 정답입니다! 멋지게 문장을 완성하셨습니다!</div>',
+          '<div class="success-box">✅ 정답입니다! 조문을 완벽하게'
+          " 완성하셨습니다!</div>",
           unsafe_allow_html=True,
       )
     else:
       st.markdown(
-          '<div class="error-box">❌ 아쉽네요! 틀린 부분이 있습니다. 단어를'
-          " 수정하거나 초기화 후 다시 도전해보세요.</div>",
+          '<div class="error-box">❌ 아쉽네요! 순서가 틀린 곳이 있습니다. 단어를'
+          " 취소하거나 초기화 후 다시 도전해보세요.</div>",
           unsafe_allow_html=True,
       )
 
@@ -273,7 +309,7 @@ if not st.session_state.game_over:
 
   # 2. 선택 가능한 단어 풀 영역
   st.markdown("#### 🔀 단어 선택 영역")
-  st.caption("아래 단어를 클릭하면 빈칸에 차례대로 채워집니다.")
+  st.caption("아래 단어를 클릭하면 위쪽 문장 빈칸으로 날아와 채워집니다.")
 
   used_pool_indices = [item[1] for item in placed_items]
   cols = st.columns(4)
@@ -358,19 +394,20 @@ else:
   st.balloons()
   st.markdown(
       """
-    <div style="text-align: center; padding: 25px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 20px;">
+    <div style="text-align: center; padding: 30px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); margin-bottom: 20px;">
         <h2>🎉 축하합니다! 10문제를 모두 완벽하게 클리어하셨습니다!</h2>
-        <p style="color: #666; font-size: 1.1rem;">대한민국 헌법 조문을 모두 완성하셨네요.</p>
+        <p style="color: #666; font-size: 1.1rem;">대한민국 헌법 조문 마스터가 되셨네요.</p>
     </div>
     """,
       unsafe_allow_html=True,
   )
 
+  # 요청하신 따옴표 없는 대형 힌트 9 배너
   st.markdown(
       """
     <div class="hint-banner">
         <h3 style="color: #c0392b; margin-bottom: 10px; font-size: 1.6rem;">🎁 최종 미션 성공 보상</h3>
-        <div style="font-size: 4rem; font-weight: 900; color: #2c3e50; margin: 15px 0; letter-spacing: 2px;">
+        <div style="font-size: 4.5rem; font-weight: 900; color: #2c3e50; margin: 15px 0; letter-spacing: 2px;">
             힌트 9
         </div>
         <p style="color: #555; font-size: 1.2rem; margin-top: 10px; font-weight: bold;">
