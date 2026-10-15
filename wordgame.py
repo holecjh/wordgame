@@ -222,7 +222,6 @@ if not st.session_state.game_over:
     with col:
       if i < len(placed_items):
         word, pool_idx = placed_items[i]
-        # 정답을 맞춘 후에는 단어 빼기 잠금
         is_locked = st.session_state.checked and st.session_state.is_correct
         if st.button(
             f"❌ {word}" if not is_locked else word,
@@ -250,10 +249,4 @@ if not st.session_state.game_over:
       st.markdown(
           '<div class="error-box">❌ 아쉽네요! 틀린 부분이 있습니다. 단어를'
           " 수정하거나 초기화 후 다시 도전해보세요.</div>",
-          unsafe_allow_html=True,
-      )
-
-  st.divider()
-
-  # 2. 선택 가능한 단어 풀 영역
-  st.markdown("
+          unsafe_allow_html=True
